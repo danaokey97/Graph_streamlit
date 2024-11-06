@@ -134,14 +134,40 @@ if 'centrality_df' in st.session_state:
     st.subheader("Centrality Measures")
     st.write(st.session_state['centrality_df'])
 
-# Only refresh ranking without recalculating full process
+# Only refresh ranking and graph without recalculating full process
 if 'centrality_df' in st.session_state and 'result_df' in st.session_state:
     centrality_df = st.session_state['centrality_df']
     result_df = st.session_state['result_df']
     top_n = st.selectbox("Pilih top N berdasarkan Degree Centrality", [3, 5, 10])
+
+    # 11. Get the top N rows based on Degree Centrality
     top_n_df = centrality_df.nlargest(top_n, 'Degree Centrality')
 
-    # 11. Merge for final result
+    # Merge top N with result_df to get final sentences
     top_n_final_df = pd.merge(top_n_df[['Kalimat']], result_df, left_on='Kalimat', right_on='kalimat ke n')
+
+    # Display top N results
     st.subheader(f"Top {top_n} Kalimat berdasarkan Degree Centrality")
     st.write(top_n_final_df[['kalimat ke n', 'final']])
+
+    # Generate the graph based on the selected top N sentences
+    top_n_sentences = top_n_final_df['kalimat ke n'].tolist()
+    top_n_indices = [i for i, sentence in enumerate(result_df['kalimat ke n']) if sentence in top_n_sentences]
+
+    # Filter the cosine similarity matrix for the selected top N sentences
+    filtered_cosine_sim = cosine_sim[top_n_indices, :][:, top_n_indices]
+
+    # Generate the adjacency matrix for the selected top N
+    threshold = 0.01
+    filtered_adjacency_matrix = np.where(filtered_cosine_sim >= threshold, 1, 0)
+
+    # Create a graph based on the filtered adjacency matrix
+    G_top_n = nx.from_numpy_array(filtered_adjacency_matrix)
+    mapping = {i: f"Kalimat ke {top_n_indices[i]+1}" for i in range(len(top_n_indices))}
+    G_top_n = nx.relabel_nodes(G_top_n, mapping)
+
+    # Plot the graph
+    plt.figure(figsize=(10, 10))
+    pos = nx.spring_layout(G_top_n)
+    nx.draw(G_top_n, pos, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
+    st.pyplot(plt)
