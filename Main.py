@@ -134,13 +134,29 @@ if 'centrality_df' in st.session_state:
     st.subheader("Centrality Measures")
     st.write(st.session_state['centrality_df'])
 
+# Graph Adjacency (graph of all sentences)
+if 'graph_fig_main' not in st.session_state:
+    # Graph for the entire dataset, created only once
+    G_main = nx.from_numpy_array(adjacency_matrix)
+    mapping_main = {i: f"Kalimat ke {i+1}" for i in range(len(result_df))}
+    G_main = nx.relabel_nodes(G_main, mapping_main)
+
+    plt.figure(figsize=(10, 10))
+    pos_main = nx.spring_layout(G_main)
+    nx.draw(G_main, pos_main, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
+    st.session_state['graph_fig_main'] = plt  # Store the main graph figure
+
+# Display the main graph (entire sentences)
+if 'graph_fig_main' in st.session_state:
+    st.pyplot(st.session_state['graph_fig_main'])
+
 # Only refresh ranking and graph without recalculating full process
 if 'centrality_df' in st.session_state and 'result_df' in st.session_state:
     centrality_df = st.session_state['centrality_df']
     result_df = st.session_state['result_df']
     top_n = st.selectbox("Pilih top N berdasarkan Degree Centrality", [3, 5, 10])
 
-    # 11. Get the top N rows based on Degree Centrality
+    # Get the top N rows based on Degree Centrality
     top_n_df = centrality_df.nlargest(top_n, 'Degree Centrality')
 
     # Merge top N with result_df to get final sentences
@@ -163,11 +179,11 @@ if 'centrality_df' in st.session_state and 'result_df' in st.session_state:
 
     # Create a graph based on the filtered adjacency matrix
     G_top_n = nx.from_numpy_array(filtered_adjacency_matrix)
-    mapping = {i: f"Kalimat ke {top_n_indices[i]+1}" for i in range(len(top_n_indices))}
-    G_top_n = nx.relabel_nodes(G_top_n, mapping)
+    mapping_top_n = {i: f"Kalimat ke {top_n_indices[i]+1}" for i in range(len(top_n_indices))}
+    G_top_n = nx.relabel_nodes(G_top_n, mapping_top_n)
 
-    # Plot the graph
+    # Plot the top N graph
     plt.figure(figsize=(10, 10))
-    pos = nx.spring_layout(G_top_n)
-    nx.draw(G_top_n, pos, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
-    st.pyplot(plt)
+    pos_top_n = nx.spring_layout(G_top_n)
+    nx.draw(G_top_n, pos_top_n, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
+    st.pyplot(plt)  # Plot the updated graph for top N
