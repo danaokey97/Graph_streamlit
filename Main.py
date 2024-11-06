@@ -44,15 +44,6 @@ def tokenize(text):
 def remove_stopwords(text):
     return [word for word in text if word not in stop_words]
 
-# Function to draw the graph
-def draw_graph(matrix, node_labels):
-    G = nx.from_numpy_array(matrix)
-    G = nx.relabel_nodes(G, node_labels)
-    plt.figure(figsize=(10, 10))
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
-    return plt
-
 # Input news
 st.title("Proses Berita dan Analisis Similarity")
 user_input = st.text_area("Masukkan Berita Baru", "", key="input_text", on_change=None)
@@ -98,13 +89,17 @@ if st.button("Tampilkan Hasil"):
         st.session_state['adjacency_df'] = adjacency_df
 
         # 8. Graph Adjacency
-        st.session_state['graph_fig'] = draw_graph(adjacency_matrix, {i: f"Kalimat ke {i+1}" for i in range(len(result_df))})
-
-        # 9. Centrality Measures
         G = nx.from_numpy_array(adjacency_matrix)
         mapping = {i: f"Kalimat ke {i+1}" for i in range(len(result_df))}
         G = nx.relabel_nodes(G, mapping)
 
+        plt.figure(figsize=(10, 10))
+        pos = nx.spring_layout(G)
+        nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=2000, font_size=10, font_color='black')
+        graph_fig = plt.gcf()
+        st.session_state['graph_fig'] = graph_fig  # Store the figure in session state
+
+        # 9. Centrality Measures
         betweenness_centrality = nx.betweenness_centrality(G)
         degree_centrality = nx.degree_centrality(G)
         closeness_centrality = nx.closeness_centrality(G)
@@ -133,6 +128,7 @@ if 'adjacency_df' in st.session_state:
     st.subheader("Adjacency Matrix")
     st.write(st.session_state['adjacency_df'])
 
+# Always display the graph figure if available
 if 'graph_fig' in st.session_state:
     st.pyplot(st.session_state['graph_fig'])
 
